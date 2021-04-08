@@ -1,0 +1,270 @@
+package com.icetech.ss2.bean.dispatcher.jobHandlers;
+
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.Future;
+import java.util.regex.Pattern;
+
+import org.bson.Document;
+
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.glassfish.grizzly.memory.ByteBufferManager;
+import org.xml.sax.DocumentHandler;
+
+import com.icetech.datacore.helper.DocumentHelper;
+import com.icetech.ss2.ac.util.AccountUtils;
+import com.icetech.ss2.dispatcher.beanif.DispatcherUtil;
+
+@WebSocket
+public class SecureClientSocket {
+	private static final Logger LOG = Log.getLogger(SecureClientSocket.class);
+	public static Document testAc;
+
+	public static void main(String[] args) {
+		String url = "wss://test.icetech.com.tw/ss2";
+
+		SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+		// Tell sslContextFactory to trust all server certificates
+		// This is suitable for test/qa environments, and internal environments,
+		// but IS NOT SUITABLE FOR PRODUCTION.
+		// Note: this is not actually necessary for wss://qa.sockets.stackexchange.com/
+		sslContextFactory.setTrustAll(true);
+		// If you do choose to comment out the above, this option will cause the
+		// Java client side SSL/TLS to validate the server certificate name
+		// against the URL used to connect to the server, if it doesn't match
+		// then the connection is not established.
+		sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
+
+		HttpClient httpClient = new HttpClient(sslContextFactory);
+		try {
+			httpClient.start();
+			WebSocketClient client = new WebSocketClient(httpClient);
+			client.start();
+			SecureClientSocket socket = new SecureClientSocket();
+
+			Future<Session> fut = client.connect(socket, URI.create(url));
+			Session session = fut.get();
+
+			// session.getRemote().sendString("Hello");
+			// session.getRemote().sendString("155-questions-active");
+
+			// 一定時間未與Dispatcher有訊息傳送,系統會將其斷線(預設10分鐘),建議每5分鐘ping一次
+			// Dispatcher cmd範例:{"s":"dispatcher","c":"ping","r":"test123"}
+			// 定期季送訊息給Server
+			new Thread(() -> {
+				while (true) {
+					try {
+						Document pnrDoc = new Document();
+						pnrDoc.append("s", "dispatcher").append("c", "pnr");
+						session.getRemote().sendString(DocumentHelper.toJson(pnrDoc));
+						Thread.sleep(100);
+					} catch (InterruptedException | IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}).start();
+
+		} catch (Throwable t) {
+			LOG.warn(t);
+		}
+	}
+
+	@OnWebSocketConnect
+	public void onConnect(Session sess) {
+		LOG.info("onConnect({})", sess);
+	}
+
+	@OnWebSocketClose
+	public void onClose(int statusCode, String reason) {
+		LOG.info("onClose({}, {})", statusCode, reason);
+	}
+
+	@OnWebSocketError
+	public void onError(Throwable cause) {
+		LOG.warn(cause);
+	}
+
+	@OnWebSocketMessage
+	public void onTextMessage(Session sess, String msg) throws IOException {
+		LOG.info("onTextMessage(0406) - {}", msg);
+
+		// 測試帳號
+		testAc = new Document().append("s", "ac").append("c", "login").append("r", "test123");
+
+		// d的部分
+		Document company = new Document("COMPANY", "ss2").append("PRODUCT", "ffm").append("LOGIN", "historydata")
+				.append("PWD", "70547377").append("APP", "X3").append("RT_TRADINGS", true).append("RT_PERMS", true)
+				.append("RT_QRYTKS", 1);
+
+		testAc.append("d", company);
+
+		// Server傳過金鑰,把密碼換成暗碼
+		Document msgDoc = Document.parse(msg);
+
+		if (msgDoc.containsKey("c")) {
+			String c = msgDoc.getString("c");
+			if ("init".equals(c)) {
+				String d = msgDoc.getString("d");
+				Document data = (Document) testAc.get("d");
+
+				String k;
+				String pwd;
+				try {
+					k = AccountUtils.encryptPasswordPBKDF2((String) data.get("PWD"));
+					pwd = AccountUtils.encryptPasswordSHA256(k, d);
+					data.append("PWD", pwd);
+				} catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+					e.printStackTrace();
+				}
+
+				// LOG.info("加密過的密碼是 {}", (String)data.get("PWD"));
+				sess.getRemote().sendString(DocumentHelper.toJson(testAc));
+			}
+		}
+
+		// 收到登入回報訊息之後， 發送 Search 指令
+		if (msgDoc.containsKey("s")) {
+			String s = msgDoc.getString("s");
+			String c = msgDoc.getString("c");
+
+			// 確認收到登入成功訊息，其中可以看到各項服務可使用權限
+			// "apconfig":["getcompany","setcompany","delcompany","getproduct","setproduct","delproduct",
+			// "getuser","setuser","deluser",,"delexuser","setexuser","getexuser","delexproduct","setexproduct",
+			// "getexproduct","delexcompany","setexcompany","getexcompany",
+			if ("login".equals(c) && "ac".equals(s)) {
+
+				// ========================search ==================================
+				/** search 會主動去跟svc AC 索取使用者的 "資料存取權限" ，並將搜尋結果跟該權限核對，把匹配的結果傳送給使用者 **/
+//				Document schHistorydata = new Document("s","APConfig").append("c", "search")
+//				.append("d", new Document("company", "ss2").append("product", "*")
+//				.append("user", "h2").append("profile", "*"));
+//				sess.getRemote().sendString(DocumentHelper.toJson(schHistorydata));
+				// ========================END ==================================
+
+				// =========================Sub==================================
+//				Document subQry = new Document().append("s", "APConfig").append("c", "sub").append("d", new Document())
+//						.append("r", "sub功能");
+//				sess.getRemote().sendString(DocumentHelper.toJson(subQry));
+				// ========================END ==================================
+
+	            // =========================SubEx==================================
+                Document subExQry = new Document().append("s", "APConfig").append("c", "subEx").append("d", new Document("product","c"))
+                        .append("r", "subEx功能");
+                sess.getRemote().sendString(DocumentHelper.toJson(subExQry));
+                // ========================END ==================================
+				
+                Document unsubEx = new Document().append("s", "APConfig").append("c", "unsubEx").append("d", new Document().append("product", "c"))
+                        .append("r", "unsubEx 測試");
+                sess.getRemote().sendString(DocumentHelper.toJson(unsubEx));
+                
+//                  Document unsub = new Document().append("s", "APConfig").append("c", "unsub").append("d", new Document().append("product", "aaad"))
+//                      .append("r", "unsub 測試");
+//                  sess.getRemote().sendString(DocumentHelper.toJson(unsub));
+                
+                
+				// =========================unub==================================
+//				Document unsubQry = new Document().append("s", "APConfig").append("c", "unsubEx").append("d", new Document())
+//						.append("r", "unsubEx 功能");
+//				sess.getRemote().sendString(DocumentHelper.toJson(unsubQry));
+				// ========================END ==================================
+
+				// cmd 共同設定
+				// new Document("s","APConfig");
+				// sess.getRemote().sendString(DocumentHelper.toJson());
+
+				// =========================GetUser==================================
+				// {"s":"APConfig","c":"getUser","d":{"profile":"anyString"},"r":"threadID"}
+
+				/** 比較 getUser, getExUser 兩者之間的差異 **/
+				/**
+				 * 1. profile 有提供預設值，所有方法除去 sub 不需要之外，其他方法都有提供。 2.general-cmd 直接取 SessionObject
+				 * so.getUniqueId( ) 取得 cpu， 唯一的自由度 profile，也有預設值。 3.Ex-cmd 比 general-cmd 提供額外的
+				 * pu 自由度，但沒有提供預設值，若不提供pu會寄送錯誤訊息給使用者。
+				 */
+				// getUser(沒有cpu，也沒有profile)
+//					Document guQry = new Document("s","APConfig").append("c", "getExUser")
+//							.append("d", new Document("user","a").append("product", "val(product)").append("data", new Document("test1", "val(test1)"))).append("r", "");
+//					sess.getRemote().sendString(DocumentHelper.toJson(guQry));
+
+				// getExUser(有cpu, profile)
+//					Document guQry = new Document("s","APConfig").append("c", "getExUser")
+//					.append("d", new Document("product","myProduct").append("user", "SpringBoot")
+//					.append("company", "icetech").append("profile", "getExUser(有cpu, profile)")).append("r", "getExUser(有cpu, profile)");
+//					sess.getRemote().sendString(DocumentHelper.toJson(guQry));
+
+				// ========================END ==================================
+
+				// =========================SetConfig==================================
+//					Document setCpy = new Document("s", "APConfig").append("c", "setUser")
+//							.append("d", new Document("profile", "只有ss2，測試historydata")
+//									.append("data", new Document("testSub",true)));
+//					sess.getRemote().sendString(DocumentHelper.toJson(setCpy));
+
+//					Document delUser = new Document("s","APConfig").append("c", "delUser")
+//							.append("d", new Document().
+//									append("data", new Document()));
+//					sess.getRemote().sendString(DocumentHelper.toJson(delUser));
+                
+			
+			}
+		}
+
+		// GZIP : {"s":"dispatcher","c":"zip","d":"G"}
+//			if(msgDoc.containsKey("s")) {
+//				String s = msgDoc.getString("s");
+//				if("login".equals(c) && "ac".equals(s)) {
+//					Document zipQuery = new Document().append("s","dispatcher").append("c", "zip").append("d", "T");
+//					
+//				System.out.println(zipQuery.toJson());
+//					sess.getRemote().sendString(DocumentHelper.toJson(zipQuery));
+//				}
+//			}
+
+	}
+
+	@OnWebSocketMessage
+	public void onBinaryMessage(InputStream is) {
+		BufferedInputStream bis = null;
+		try {
+			byte[] buff = new byte[is.available()];
+			bis = new BufferedInputStream(is);
+			bis.read(buff);
+
+			String msg = DispatcherUtil.unzip(buff);
+			LOG.info("Binary Message {}", msg);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (bis != null) {
+				try {
+					bis.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+
+		}
+	}
+
+}

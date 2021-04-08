@@ -1,0 +1,723 @@
+package com.icetech.ss2.bean.dispatcher.jobHandlers;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.bson.Document;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.reactivestreams.Publisher;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.icetech.datacore.ILogger;
+import com.icetech.datacore.IMessaging;
+import com.icetech.datacore.IStringCallback;
+import com.icetech.datacore.ISyncPersistent;
+import com.icetech.datacore.Parameters;
+import com.icetech.datacore.Result;
+import com.icetech.datacore.exception.MessageException;
+import com.icetech.datacore.helper.DocumentHelper;
+import com.icetech.ss2.dispatcher.beanif.DispatcherUtil;
+import com.icetech.ss2.dispatcher.beanif.PubSubService2Interface;
+import com.icetech.ss2.dispatcher.data.SessionObject;
+
+@Service("APConfig")
+public class APConfigJobHandler extends JobHandler {
+
+    @Autowired
+    protected PubSubService2Interface pMgr; // Dispatcher的iPush，JobHandler向Dispatcher訂閱client需要的商品
+
+    /** 寫dcpai Log物件 */
+    private ILogger iLog;
+    ISyncPersistent iSP;
+    IMessaging iM;
+
+    @Override
+    public void init() {
+        try {
+            iLog = DispatcherUtil.getiLogObj();
+        } catch (Exception e) {
+            logit("init #1 e:" + e);
+            iLog = null;
+        }
+
+        iSP = DispatcherUtil.getIspersistentObj();
+        if (iSP == null)
+            logit("iSP is null");
+
+        iM = DispatcherUtil.getImessagingObj();
+        if (iM == null)
+            logit("iM is null");
+
+        logit("Init OK");
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Override
+    public Publisher sessionInit(SessionObject so) {
+        APConfigJobHandler temp = this;
+        so.setProperties(this, "subCallBack", new IStringCallback() {
+            @Override
+            public void onMessage(String serviceId, String channel, String str) {
+                logit("[APC](" + serviceId + " | " + channel + ") json.len=" + str.length());
+                so.sendJson(temp, "sub", str, 0, null);
+            }
+        });
+
+        so.setProperties(this, "subExCallBack", new IStringCallback() {
+            @Override
+            public void onMessage(String serviceId, String channel, String str) {
+                logit("[APC](" + serviceId + " | " + channel + ") json.len=" + str.length());
+                so.sendJson(temp, "subEx", str, 0, null);
+            }
+        });
+        return super.sessionInit(so);
+    }
+
+    SimpleDateFormat sdf_MdHmsS = new SimpleDateFormat("MM/dd HH:mm:ss SSS");
+
+    @Override
+    public void handle(SessionObject so, JSONObject message) throws Exception {
+        String cmd = "", r = "";
+        try {
+            r = (message.has("r")) ? message.getString("r") : ""; // 識別字串
+
+            try {
+                Document logDoc = Document.parse(message.toString());
+                if (logDoc.containsKey("d")) {
+                    Document doc = (Document) logDoc.get("d");
+                    if (doc.containsKey("data")) {
+                        Document docData = (Document) doc.get("data");
+                        doc.put("data", "(Skip " + docData.toJson().length() + "...)");
+                    }
+                }
+                logit("Handle " + DocumentHelper.toJson(logDoc) + ", \"r\":" + r);
+            } catch (Exception e) {
+                logit("Handle unknown JSONObject(" + message.toString().length() + "), \"r\":" + r);
+            }
+
+            // 檢查欄位
+            if (!message.has("c") || (cmd = message.getString("c")).equals("")) {
+                sendErrMsg(so, "Loss token \"c\"", "", r, -14);
+                return;
+            }
+
+            if (iSP == null) {
+                so.sendJson(this, cmd, "{\"msg\":\"APConfigJobHandler並未成功連接DB。\"}", 1, r);
+                return;
+            }
+
+            if (!message.has("d")) {
+                sendErrMsg(so, "Loss token \"d\"", cmd, r, -14);
+                return;
+            }
+            JSONObject jso = message.getJSONObject("d");
+
+            if (jso.has("log") && "1".equals(jso.getString("log"))) {
+                queryLog(so, jso, cmd, r);
+                return;
+            }
+
+            // 檢查Ex命令下，是否存在完整參數
+            String strEx = "";
+            switch (cmd) {
+            case "getExUser":
+            case "setExUser":
+            case "delExUser":
+                if (!jso.has("user")) {
+                    sendErrMsg(so, "Loss user.", cmd, r, -16);
+                    return;
+                }
+                strEx = jso.getString("user");
+            case "getExProduct":
+            case "setExProduct":
+            case "delExProduct":
+            case "subEx":
+            case "unsubEx":
+                if (!jso.has("product")) {
+                    sendErrMsg(so, "Loss product.", cmd, r, -16);
+                    return;
+                }
+                strEx = jso.getString("product") + ":" + strEx;
+            case "getExCompany":
+            case "setExCompany":
+            case "delExCompany":
+                String company = so.getUniqLoginId().split(":")[1];
+                strEx = "UID:" + company + ":" + strEx;
+                jso.put("Ex", strEx);
+
+                // 嘗試檢查AC設定的範圍
+                ArrayList<String> alFilter = getACInfo(so);
+                if (alFilter == null) {
+                    sendErrMsg(so, "ACSessionSvcInfo format error.", cmd, r, -18);
+                    return;
+                } else if (alFilter.size() > 0) {
+                    int res = ckACRange(strEx, alFilter);
+                    if (res < 0) {
+                        sendErrMsg(so, "Unreachable data.", cmd, r, -17);
+                        return;
+                    }
+                }
+                break;
+            default:
+                jso.remove("Ex");
+            }
+
+            jso.put("cy", false);
+            jso.put("pt", false);
+
+            switch (cmd) {
+            case "sub":
+                doSubAction(so, jso, cmd, r);
+                break;
+            case "subEx":
+                subEx(so, jso, cmd, r);
+                break;
+            case "unsub":
+                unsub(so, jso, cmd, r);
+                break;
+            case "unsubEx":
+                unsubEx(so, jso, cmd, r);
+                break;
+            case "search":
+                searchConfig(so, jso, cmd, r);
+                break;
+            case "getExCompany":
+            case "getCompany":
+                jso.put("cy", true);
+            case "getExProduct":
+            case "getProduct":
+                jso.put("pt", true);
+            case "getExUser":
+            case "getUser":
+                getConfig(so, jso, cmd, r);
+                break;
+            case "setExCompany":
+            case "setCompany":
+                jso.put("cy", true);
+            case "setExProduct":
+            case "setProduct":
+                jso.put("pt", true);
+            case "setExUser":
+            case "setUser":
+                setConfig(so, jso, cmd, r);
+                break;
+            case "delExCompany":
+            case "delCompany":
+                jso.put("cy", true);
+            case "delExProduct":
+            case "delProduct":
+                jso.put("pt", true);
+            case "delExUser":
+            case "delUser":
+                delConfig(so, jso, cmd, r);
+                break;
+            default:
+                sendErrMsg(so, "Unknown command.", cmd, r, -15);
+            }
+
+        } catch (Exception e) {
+            logit(e.toString());
+            StringBuilder sbr = new StringBuilder();
+            sbr.append("{\"msg\":{ \"L-1\":\"" + e + "\",");
+            int i = 2;
+            for (StackTraceElement st : e.getStackTrace()) {
+                sbr.append("\"L-" + i++ + "\":\"" + st.toString() + "\",");
+                logit(st.toString());
+            }
+            sbr.delete(sbr.length() - 1, sbr.length());
+            sbr.append("}}");
+            try {
+                String temp = sbr.toString();
+                logit(temp);
+                so.sendJson(this, cmd, temp, -13, r);
+            } catch (Exception e1) {
+                logit(e1.toString());
+            }
+        }
+    }
+
+    /** 查詢log與當前版本，這是測試的方法之一 */
+    private void queryLog(SessionObject so, JSONObject jso, String cmd, String r) throws JSONException { // TODO
+        if (jso.has("log")) {
+            // 寫出版本號
+            String ver = "0.5.0";
+            logit("Tag : " + ver);
+            String line = "{\"ver\":\"" + ver + "\"}";
+            so.sendJson(this, cmd, line, 1, r);
+            return;
+        }
+    }
+
+    /**
+     * 取得使用者在AC中設定的存取範圍
+     * 
+     * @return null 表示失敗。大小為0表示沒有設定。
+     */
+    private ArrayList<String> getACInfo(SessionObject so) {
+        ArrayList<String> alFilter;
+        Document acinfoDoc = so.getACSessionSvcInfo(this);
+        if (acinfoDoc == null || !acinfoDoc.containsKey("range"))
+            return new ArrayList<>();
+
+        logit("acinfoDoc:" + acinfoDoc);
+        try {
+            @SuppressWarnings("unchecked")
+            ArrayList<String> temp = (ArrayList<String>) acinfoDoc.get("range");
+            alFilter = temp;
+        } catch (Exception e) {
+            return null;
+        }
+        return alFilter;
+    }
+
+    /** 比較使用者是否符合AC中設定的存取範圍 */
+    private int ckACRange(String strEX, ArrayList<String> alFilter) throws Exception {
+        if (alFilter.size() == 0)
+            return 0;
+        String[] ss = (strEX + "::*").split(":");
+        String company = ss[1];
+        String product = ss[2];
+        String user = ss[3];
+        for (String filter : alFilter) {
+            if (filter.length() > 0) {
+                String[] ss2 = (filter + ":::*").split(":");
+                if (company.equals(ss2[0])) {
+                    if (ss2[1].length() == 0 || ss2[1].equals(product)) {
+                        if (ss2[2].length() == 0 || ss2[2].equals(user)) {
+                            return 0;
+                        }
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
+    private void doSubAction(SessionObject so, JSONObject jso, String cmd, String r) throws Exception {
+        String uid = so.getUniqLoginId();
+        logit("sub " + uid);
+        String[] uids = uid.split(":");
+
+        LinkedList<String> attrs = new LinkedList<>(); // 需要撈出這些欄位
+        attrs.add("profile");
+        attrs.add("v");
+
+        Document outDoc = new Document();
+
+        // 查詢公司
+        Parameters query = new Parameters("D");
+        query.setService("APConfig");
+        query.setAttributes(attrs);
+        Document filter = new Document().append("company", uids[1]).append("product", new Document("$exists", false))
+                .append("user", new Document("$exists", false));
+        query.setFilter(filter);
+        Iterable<Document> it = iSP.get(query);
+        Document docCY = new Document();
+        for (Document dbDoc : it) {
+            docCY.put(dbDoc.getString("profile"), dbDoc.containsKey("v") ? dbDoc.getLong("v") : 0);
+        }
+        outDoc.put("c", docCY);
+        // 查詢產品
+        filter.put("product", uids[2]);
+        query.setFilter(filter);
+        it = iSP.get(query);
+        Document docPT = new Document();
+        for (Document dbDoc : it) {
+            docPT.put(dbDoc.getString("profile"), dbDoc.containsKey("v") ? dbDoc.getLong("v") : 0);
+        }
+        outDoc.put("p", docPT);
+
+        // 查詢使用者
+        filter.put("user", uids[3]);
+        query.setFilter(filter);
+        it = iSP.get(query);
+        Document docUR = new Document();
+        for (Document dbDoc : it) {
+            docUR.put(dbDoc.getString("profile"), dbDoc.containsKey("v") ? dbDoc.getLong("v") : 0);
+        }
+        outDoc.put("u", docUR);
+
+        logit("subout " + DocumentHelper.toJson(outDoc));
+
+        // 訂閱
+        IStringCallback tempISCB = so.getProperties(this, "subCallBack");
+        Result res1 = pMgr.channelSubscribeString("APConfig", so, uids[1], tempISCB);
+        Result res2 = pMgr.channelSubscribeString("APConfig", so, uids[1] + ":" + uids[2], tempISCB);
+        Result res3 = pMgr.channelSubscribeString("APConfig", so, uids[1] + ":" + uids[2] + ":" + uids[3], tempISCB);
+        logit("sub (" + res1.isSuccessful() + ", " + res2.isSuccessful() + ", " + res3.isSuccessful() + ")");
+        outDoc.put("s", res3.isSuccessful());
+
+        so.sendJson(this, cmd, outDoc, 0, r);
+
+    }
+
+    private void subEx(SessionObject so, JSONObject jso, String cmd, String r) throws Exception {
+
+        String uid = so.getUniqLoginId();// 回傳 "pdpf:ss2:ffm:historydata" 這類字串
+        logit("subEx's uid " + uid);
+        String[] uids = uid.split(":");
+
+        if (jso.has("Ex")) {
+            uids[2] = jso.getString("Ex").split(":")[2];// 取到使用者設定的Product
+        } else {
+            sendErrMsg(so, "Loss token \"Ex-statement\"", cmd, r, -16);
+            return;
+        }
+
+        // 顯示欄位，參照sub功能
+        LinkedList<String> attrs = new LinkedList<>(); // 需要撈出這些欄位
+        attrs.add("profile");
+        attrs.add("v");
+
+        // 傳回訂閱前已存在的profile + version
+        Document outDoc = new Document();
+
+        Parameters query = new Parameters("D");
+        query.setService("APConfig");
+        query.setAttributes(attrs);
+
+        // 查詢商品
+        Document filter = new Document().append("company", uids[1]).append("product", uids[2]).append("user",
+                new Document("$exists", false));
+        query.setFilter(filter);
+        Iterable<Document> it = iSP.get(query);
+        Document docPT = new Document();
+        for (Document dbDoc : it) {
+            docPT.put(dbDoc.getString("profile"), dbDoc.containsKey("v") ? dbDoc.getLong("v") : 0);
+        }
+        outDoc.put("p", docPT);
+
+        // 查詢使用者
+        Document docUR = new Document();
+        filter.put("user", uids[3]);
+        for (Document dbDoc : it) {
+            docUR.put(dbDoc.getString("profile"), dbDoc.containsKey("v") ? dbDoc.getLong("v") : 0);
+        }
+        outDoc.put("u", docUR);
+
+        logit("subExOut " + DocumentHelper.toJson(outDoc));
+
+        // 訂閱
+        IStringCallback tempISCB = so.getProperties(this, "subExCallBack");
+ 
+        Result resPT = pMgr.channelSubscribeString("APConfig", so, uids[1] + ":" + uids[2], tempISCB);
+        Result resUr = pMgr.channelSubscribeString("APConfig", so, uids[1] + ":" + uids[2] + ":" + uids[3], tempISCB);
+
+        logit("subEx (" + resPT.isSuccessful() + ", " + resUr.isSuccessful() + ")");
+
+        so.sendJson(this, cmd, outDoc, 0, r);
+    }
+
+    private void unsubEx(SessionObject so, JSONObject jso, String cmd, String r) throws Exception {
+        String uid = so.getUniqLoginId();
+        logit("subEx's uid " + uid);
+        String[] uids = uid.split(":");
+
+        if (jso.has("Ex")) {
+            uids[2] = jso.getString("Ex").split(":")[2];// 取得使用者設定的Product
+        } else {
+            return;
+        }
+
+        // 1. res/ub/PT(result/unsubscribe/Product)
+        // 2. 遇到沒訂閱過的頻道會回傳 null
+        Result resubPT = pMgr.channelUnsubscribe("APConfig", so, uids[1] + ":" + uids[2]);
+        Result resubUR = pMgr.channelUnsubscribe("APConfig", so, uids[1] + ":" + uids[2] + ":" + uids[3]);
+
+        //so.sendJson(this, cmd, resubPT, 0, "觀察 resubPT");//沒有d-terms 代表 resubPT isNull
+        //so.sendJson(this, cmd, resubUR, 0, "觀察 resubUR");
+
+        logit("Product Channel success ?" + (resubPT != null ? resubPT.isSuccessful() : "Failed")
+                + ", User Channel success ?" + (resubUR != null ? resubUR.isSuccessful() : "Failed") + ")");
+
+        if (resubPT != null && resubUR != null) {
+            if (resubPT.isSuccessful() && resubUR.isSuccessful())
+                so.sendJson(this, cmd, "{\"msg\":\"UnsubscribeEx Success.\"}", 0, r);
+        } else
+            sendErrMsg(so, "UnsubscribeEx fail.", cmd, r, -31);
+
+    }
+
+    private void unsub(SessionObject so, JSONObject jso, String cmd, String r) throws Exception {
+        String uid = so.getUniqLoginId();
+        logit("unsub's uid " + uid);
+        String[] uids = uid.split(":");
+
+        Result res1 = pMgr.channelUnsubscribe("APConfig", so, uids[1]);
+        Result res2 = pMgr.channelUnsubscribe("APConfig", so, uids[1] + ":" + uids[2]);
+        Result res3 = pMgr.channelUnsubscribe("APConfig", so, uids[1] + ":" + uids[2] + ":" + uids[3]);
+        logit("unsub (Company Channel success ?" + (res1 != null ? res1.isSuccessful() : "Fail.")
+                + ", Product Channel success ?" + (res2 != null ? res2.isSuccessful() : "Fail.")
+                + ", User Channel success ?" + (res3 != null ? res3.isSuccessful() : "Fail.") + ")");
+
+        if (res1 != null && res2 != null && res3 != null) {
+            if (res1.isSuccessful() && res2.isSuccessful() && res3.isSuccessful())
+                so.sendJson(this, cmd, "{\"msg\":\"Unsubscribe Success.\"}", 0, r);
+        } else
+            sendErrMsg(so, "Unsubscribe fail.", cmd, r, -31);
+
+    }
+
+    private void searchConfig(SessionObject so, JSONObject jso, String cmd, String r) throws Exception {
+        List<Document> listData = new LinkedList<Document>();
+        String[] fields = { "company", "product", "user", "profile" };
+
+        Parameters query = new Parameters("D");
+        Document filter = new Document();
+        Document cpuf = new Document();
+        query.setService("APConfig");
+        query.setFilter(filter);
+        query.setSort(new Document().append("company", 1).append("product", 1).append("user", 1).append("profile", 1));
+        query.setAttributes(Arrays.asList(fields));
+
+        // 如果參數為空的話，就使用$exists，如果是*就不代入以表示通用
+        try {
+            String[] uid = so.getUniqLoginId().split(":");
+            String company = uid[1];
+            filter.append("company", company);
+            cpuf.append("company", company);
+        } finally {
+        }
+        if (!jso.has("product")) {
+            filter.append("product", new Document("$exists", false));
+        } else {
+            String product = jso.getString("product");
+            if (!product.equals("*"))
+                filter.append("product", product);
+            cpuf.append("product", product);
+        }
+        if (!jso.has("user")) {
+            filter.append("user", new Document("$exists", false));
+        } else {
+            String user = jso.getString("user");
+            if (!user.equals("*"))
+                filter.append("user", new Document("$regex", user));
+            cpuf.append("user", user);
+        }
+        if (!jso.has("profile")) {
+            String profile = "default";
+            filter.append("profile", profile);
+            cpuf.append("profile", profile);
+        } else {
+            String profile = jso.getString("profile");
+            if (!profile.equals("*"))
+                filter.append("profile", new Document("$regex", profile));
+            cpuf.append("profile", profile);
+        }
+        logit("searchUser filter:" + filter.toJson());
+
+        ArrayList<String> alFilter = getACInfo(so);
+        if (alFilter == null || alFilter.size() == 0) { // 沒有限制的情況
+            for (Document dbDoc : iSP.get(query)) {
+                dbDoc.remove("_id");
+                listData.add(dbDoc);
+            }
+
+        } else { // AC可以取到合理的權限的話
+            HashSet<String> hs = new HashSet<>(); // 用來暫存已經比較過的cpu組合，使多個profile可以一次完成
+            for (Document dbDoc : iSP.get(query)) {
+                StringBuilder sbr = new StringBuilder("UID:");
+                String c = dbDoc.getString("company");
+                if (c != null)
+                    sbr.append(c);
+                sbr.append(":");
+                String p = dbDoc.getString("product");
+                if (p != null)
+                    sbr.append(p);
+                String u = dbDoc.getString("user");
+                if (u != null)
+                    sbr.append(":").append(u);
+                String uid = sbr.toString();
+
+                if (hs.contains(uid)) {
+                    dbDoc.remove("_id");
+                    listData.add(dbDoc);
+                } else if (ckACRange(uid, alFilter) == 0) { // 檢查檢索出的內容是否符合AC權限
+                    hs.add(uid);
+                    dbDoc.remove("_id");
+                    listData.add(dbDoc);
+                }
+            }
+        }
+
+        // 回覆
+        Document outDoc = new Document("cpuf", cpuf);
+        if (listData.size() > 0)
+            outDoc.append("data", listData);
+        else
+            outDoc.append("msg", "No data.");
+        so.sendJson(this, cmd, outDoc, 0, r);
+    }
+
+    private void getConfig(SessionObject so, JSONObject jso, String cmd, String r) throws Exception {
+        String profile = jso.has("profile") ? jso.getString("profile") : "default";
+
+        Parameters query = new Parameters("D");
+        String[] uids = (jso.has("Ex") ? jso.getString("Ex") : so.getUniqLoginId()).split(":");
+        Document filter = new Document().append("company", uids[1]);
+        if (!jso.getBoolean("cy")) {
+            filter.append("product", uids[2]);
+            if (!jso.getBoolean("pt"))
+                filter.append("user", uids[3]);
+            else
+                filter.append("user", new Document().append("$exists", false));
+        } else {
+            filter.append("product", new Document().append("$exists", false));
+            filter.append("user", new Document().append("$exists", false));
+        }
+        filter.append("profile", profile);
+
+        query.setService("APConfig");
+        query.setFilter(filter);
+        query.setLimit(1);
+        logit("r:" + r + " qy:" + query.toJson());
+        Iterable<Document> it = iSP.get(query);
+        for (Document dbDoc : it) {
+            logit("r:" + r + " db data.len=" + dbDoc.toJson().length());
+            so.sendJson(this, cmd, new Document("v", dbDoc.containsKey("v") ? dbDoc.getLong("v") : 0)
+                    .append("profile", profile).append("data", dbDoc.get("data")), 0, r, true);
+            return;
+        }
+
+        sendErrMsg(so, "No Data.", cmd, r, 0);
+    }
+
+    private void delConfig(SessionObject so, JSONObject jso, String cmd, String r) throws Exception {
+        String profile = jso.has("profile") ? jso.getString("profile") : "default";
+
+        Parameters query = new Parameters("D");
+        String[] uids = (jso.has("Ex") ? jso.getString("Ex") : so.getUniqLoginId()).split(":");
+        Document filter = new Document().append("company", uids[1]);
+        String upc;
+        String sendChannel;
+        if (!jso.getBoolean("cy")) {
+            filter.append("product", uids[2]);
+            if (!jso.getBoolean("pt")) {
+                upc = "u";
+                sendChannel = uids[1] + ":" + uids[2] + ":" + uids[3];
+                filter.append("user", uids[3]);
+            } else {
+                upc = "p";
+                sendChannel = uids[1] + ":" + uids[2];
+                filter.append("user", new Document().append("$exists", false));
+            }
+        } else {
+            upc = "c";
+            sendChannel = uids[1];
+            filter.append("product", new Document().append("$exists", false));
+            filter.append("user", new Document().append("$exists", false));
+        }
+        filter.append("profile", profile);
+
+        query.setService("APConfig");
+        query.setFilter(filter);
+        query.setLimit(1);
+        logit("r:" + r + " qy:" + query.toJson());
+
+        Result res = iSP.remove(query);
+        if (res.isSuccessful()) {
+            so.sendJson(this, cmd, "{\"msg\":\"Delete Success.\"}", 0, r, true);
+
+            // 透過channel回送版本號-1給user
+            boolean res2 = iM.queueSend("APConfig", "TransferStation",
+                    new Document("sc", sendChannel).append("msg", "{\"" + upc + "\":{\"" + profile + "\":-1}}"));
+            logit("resend res=" + res2);
+        } else {
+            sendErrMsg(so, "Delete fail.", cmd, r, 0);
+        }
+    }
+
+    private void setConfig(SessionObject so, JSONObject jso, String cmd, String r) throws Exception {
+        if (!jso.has("data")) {
+            sendErrMsg(so, "No config data.", cmd, r, -18);
+            return;
+        }
+        Object obj = jso.get("data");
+        if (!(obj instanceof JSONObject)) {
+            sendErrMsg(so, "Config data not Json", cmd, r, -18);
+            return;
+        }
+        Document data = Document.parse(obj.toString());
+
+        String profile = jso.has("profile") ? jso.getString("profile") : "default";
+
+        Parameters query = new Parameters("D");
+        String[] uids = (jso.has("Ex") ? jso.getString("Ex") : so.getUniqLoginId()).split(":");
+        Document filter = new Document().append("company", uids[1]);
+        String upc;
+        String sendChannel;
+        if (!jso.getBoolean("cy")) {
+            filter.append("product", uids[2]);
+            if (!jso.getBoolean("pt")) {
+                upc = "u";
+                sendChannel = uids[1] + ":" + uids[2] + ":" + uids[3];
+                filter.append("user", uids[3]);
+            } else {
+                upc = "p";
+                sendChannel = uids[1] + ":" + uids[2];
+                filter.append("user", new Document().append("$exists", false));
+            }
+        } else {
+            upc = "c";
+            sendChannel = uids[1];
+            filter.append("product", new Document().append("$exists", false));
+            filter.append("user", new Document().append("$exists", false));
+        }
+        filter.append("profile", profile);
+
+        Document outDoc = new Document().append("data", data);
+        query.setService("APConfig");
+        query.setFilter(filter);
+
+        // 取得DB中可能存在的舊版本號
+        long v = 0;
+        query.setLimit(1);
+        LinkedList<String> ll = new LinkedList<>();
+        ll.add("v");
+        query.setAttributes(ll);
+        Iterable<Document> it = iSP.get(query);
+        for (Document dbDoc : it) {
+            v = dbDoc.containsKey("v") ? dbDoc.getLong("v") : 0;
+        }
+        outDoc.append("v", v + 1); // 設定版本號+1
+
+        logit("r:" + r + " qy:" + query.toJson());
+        logit("r:" + r + " da:" + outDoc.toJson());
+        Result res = iSP.merge(query, outDoc);
+        if (res.isSuccessful()) {
+            so.sendJson(this, cmd, "{\"msg\":\"Update Success.\"}", 0, r, true);
+
+            // 透過channel回送新的版本號給user(其實要先丟給service再丟出來)
+            boolean res2 = iM.queueSend("APConfig", "TransferStation", new Document("sc", sendChannel).append("msg",
+                    "{\"" + upc + "\":{\"" + profile + "\":" + (v + 1) + "}}"));
+            logit("resend " + sendChannel + " res=" + res2);
+        } else {
+            sendErrMsg(so, "Update Fail.", cmd, r, 0);
+        }
+    }
+
+    private void sendErrMsg(SessionObject so, String msg, String c, String r, int code) throws Exception {
+        logit("sendErrMsg:" + msg);
+        Document doc = new Document();
+        doc.append("msg", msg);
+        so.sendJson(this, c, doc, code, r, true);
+    }
+
+    public void logit(String msg) {
+        if (iLog != null) {
+            iLog.info("[APC]" + msg);
+        }
+    }
+
+    public void logit(String msg, Document tags) {
+        if (iLog != null) {
+            iLog.info("[APC]" + msg, tags);
+        }
+    }
+}

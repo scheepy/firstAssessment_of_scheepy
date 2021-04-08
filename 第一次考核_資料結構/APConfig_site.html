@@ -1,0 +1,896 @@
+<div>
+    <font size="4"><strong>概要</strong></font>
+</div>
+<blockquote dir="ltr" style="margin-right:0px">
+    <div>
+        <font size="4">提供給使用者一個儲存Json字串的位置，根據不同的profile，同一個使用者可以存多筆資料。</font>
+    </div>
+    <div>
+        <font size="4">單一筆資料最大為16MB。</font>
+    </div>
+</blockquote>
+<div>&nbsp;</div>
+<div>
+    <font size="3"><strong>連線</strong></font>
+</div>
+<blockquote style="margin-right:0px">
+    <div>
+        <font face="Arial">透過<span style="background-color:transparent">
+                <font color="#000000" size="2"> Dispatcher &amp; JobHandler 訂閱行情和取得回補資料。</font>
+            </span></font>
+    </div>
+    <div style="line-height:1.38;margin-top:0pt;margin-bottom:0pt"><span style="font-size:13.33px"><span style="background-color:transparent">
+                <font color="#000000" face="arial,sans-serif">連線(參閱AC文件)</font>
+            </span></span></div>
+    <div style="line-height:1.38;margin-top:0pt;margin-bottom:0pt"><span style="font-family:courier new,monospace;font-size:13.33px"><span
+                style="background-color:transparent">
+                <font color="#000000">
+                    <blockquote style="margin-right:0px">
+                        <div><span style="color:rgb(255,0,0);font-size:13.33px">
+                                <font face="arial,sans-serif">*僅限SSL連線時可使用</font>
+                            </span></div>
+                        <div>
+                            <font color="#ff0000" face="arial,sans-serif">開發機SSL連線:</font>
+                        </div>
+                        <div>
+                            <font color="#ff0000">
+                                <font face="arial,sans-serif">hosts設定</font>
+                                <div>
+                                    <font face="arial,sans-serif">172.28.16.205 test.icetech.com.tw</font>
+                                </div>
+                                <div>
+                                    <font face="arial,sans-serif">&nbsp;</font>
+                                </div>
+                                <div>
+                                    <font face="arial,sans-serif">然後改用</font>
+                                </div>
+                            </font>
+                            <div>
+                                <font color="#ff0000" face="arial,sans-serif">wss://test.icetech.com.tw/ss2</font>
+                            </div>
+                        </div>
+                        <div>
+                            <font color="#ff0000" face="arial,sans-serif">test可換任意字元</font>
+                        </div>
+                        <div>
+                            <div>
+                                <font face="arial,sans-serif">&nbsp;</font>
+                            </div>
+                        </div>
+                        <div>
+                            <font color="#000000" face="arial,sans-serif">dev環境可以直接連wss://ss2-dev.icetech.com.tw:10443/ss2</font>
+                        </div>
+                        <div>
+                            <font color="#000000" face="arial,sans-serif">uat環境可以直接連wss://ss2-uat.icetech.com.cn:443/ss2</font>
+                        </div>
+                        <div>
+                            <div>
+                                <font face="arial,sans-serif">&nbsp;</font>
+                            </div>
+                        </div>
+                        <div>
+                            <font color="#000000" face="arial,sans-serif">當連線成功後，將收到一份init字串。</font>
+                        </div>
+                    </blockquote>
+                </font>
+            </span></span></div>
+    <div>
+        <div>
+            <font color="#ff0000"><span style="background-color:transparent">
+                    <font color="#000000" face="arial,sans-serif" size="2">登入AC</font>
+                </span></font>
+        </div>
+        <blockquote style="margin-right:0px">
+            <div>
+                <font color="#000000"><span style="background-color:transparent">
+                        <font face="arial,sans-serif">Dispatcher cmd範例:<span style="font-size:1em;background-color:transparent"><span
+                                    style="font-size:13.33px">{"s":"ac","c":"login","r":"test123","d<font color="#000000">":{"COMPANY":"ICE"</font></span>
+                                <font color="#000000"><span style="font-size:13.33px;background-color:transparent">,"</span><span
+                                        style="font-size:13.33px">PRODUCT</span><span style="font-size:13.33px;background-color:transparent">":"SS2"</span><span
+                                        style="font-size:13.33px;background-color:transparent">,"LOGIN":"iceRoot"</span><span
+                                        style="font-size:13.33px;background-color:transparent">,"PWD":"xxxxxxxx"</span><span
+                                        style="font-size:13.33px;background-color:transparent">,"APP":"X3"</span><span
+                                        style="font-size:13.33px;background-color:transparent">,"RT_TRADINGS":true</span><span
+                                        style="font-size:13.33px;background-color:transparent">,"RT_PERMS":true,"</span><span
+                                        style="font-size:13.33px;background-color:transparent">RT_QRYTKS</span><span
+                                        style="font-size:13.33px;background-color:transparent">":1</span><span style="font-size:1em;background-color:transparent">}}</span></font>
+                            </span></font>
+                    </span></font>
+            </div>
+            <div><span style="background-color:transparent"><span style="font-size:1em;background-color:transparent"><span
+                            style="font-size:1em;background-color:transparent"><span style="font-size:1em;background-color:transparent"><span
+                                    style="font-size:1em;background-color:transparent">
+                                    <font color="#000000">
+                                        <font face="arial,sans-serif">[註]：COMPANY、<span style="font-size:13.33px">PRODUCT、LOGIN、PWD四個欄位需自行帶入有權限的使用者資料</span></font>
+                                    </font>
+                                </span></span></span></span></span></div>
+            <div><span style="background-color:transparent"><span style="font-size:1em;background-color:transparent"><span
+                            style="font-size:1em;background-color:transparent"><span style="font-size:1em;background-color:transparent"><span
+                                    style="font-size:1em;background-color:transparent">
+                                    <font color="#000000" face="arial,sans-serif"><span style="font-size:13.33px">[註]：PWD必須為init與原始密碼進行動態編碼。(參閱AC文件)</span></font>
+                                </span></span></span></span></span></div>
+        </blockquote>
+        <span style="background-color:transparent"><span style="font-size:1em;background-color:transparent"><span style="font-size:1em;background-color:transparent"><span
+                        style="font-size:1em;background-color:transparent"><span style="font-size:1em;background-color:transparent">
+                            <div>
+                                <font face="arial,sans-serif">&nbsp;</font>
+                            </div>
+                        </span></span></span></span></span>
+        <div><span style="background-color:transparent"><span style="font-size:1em;background-color:transparent"><span
+                        style="font-size:1em;background-color:transparent"><span style="font-size:1em;background-color:transparent"><span
+                                style="font-size:1em;background-color:transparent">
+                                <font color="#000000" face="arial,sans-serif"><span style="font-size:13.33px">登入成功後，可使用以下命令存取內容</span></font>
+                            </span></span></span></span></span></div>
+    </div>
+    <div><span style="background-color:transparent"><span style="font-size:1em;background-color:transparent"><span
+                    style="font-size:1em;background-color:transparent"><span style="font-size:1em;background-color:transparent"><span
+                            style="font-size:1em;background-color:transparent">
+                            <font color="#000000"><span style="font-size:13.33px">
+                                    <font face="arial,sans-serif">接收格式固定為 <span style="font-size:13.33px"><span style="background-color:transparent">
+                                                <font color="#000000">{"s":"APConfig","c":"命令","d":條件<font color="#000000">,"r":"識別字串"}</font>
+                                                </font>
+                                            </span></span></font>
+                                </span></font>
+                        </span></span></span></span></span></div>
+</blockquote>
+<div>&nbsp;</div>
+<div>使用命令帶有Company字節或Product字節，取得共用的設定(不是所有的設定)。</div>
+<div>其中，不同company但具有相同product的使用者，使用getProduct等等命令時，將存取不同的設定。</div>
+<div><br>
+</div>
+<div><strong style="font-size:13.3333px">
+        <font size="3">命令權限</font>
+    </strong></div>
+<blockquote style="margin:0 0 0 40px;border:none;padding:0px">
+    <div>
+        <font size="2">一般使用者只需要以下命令權限</font>
+    </div>
+</blockquote>
+<blockquote style="margin:0 0 0 40px;border:none;padding:0px">
+    <blockquote style="margin:0 0 0 40px;border:none;padding:0px">
+        <font size="2">sub、setUser</font><span style="font-size:small;background-color:transparent">、getUser、delUser、getProduct、getCompany<br>
+        </span>
+    </blockquote>
+    <blockquote style="margin:0 0 0 40px;border:none;padding:0px">
+        <font size="2">&nbsp;</font>
+    </blockquote>
+</blockquote>
+<div>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;貼牌客戶沒有BO可以操作調整設定</div>
+<div>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;因此<span style="font-size:13.3333px;background-color:transparent">client</span><span
+        style="font-size:13.3333px">透過</span><span style="background-color:transparent;font-size:1em">Ex命令組來達到BO調整設定的功能</span></div>
+<div><br>
+</div>
+<div><strong>
+        <font size="3">命令：<font color="#6aa84f">sub</font>
+        </font>
+    </strong></div>
+<blockquote dir="ltr" style="margin-right:0px">
+    <div>條件：空Json字串</div>
+    <div>說明：使用者呼叫過此命令之後，會返回當前所有profile的版本號。並且在此之後，單一profile更新版本，都會收到通知。使用者須自行決定要不要主動呼叫更新。</div>
+    <div>例：{"s":"APConfig","c":"sub","d":{},"r":"test"}</div>
+    <div><br>
+    </div>
+    <div>回傳格式</div>
+    <div>
+        <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+            <tbody>
+                <tr>
+                    <td style="width:72px;height:20px">&nbsp;Key</td>
+                    <td style="width:498px;height:20px">&nbsp;說明</td>
+                </tr>
+                <tr>
+                    <td style="width:72px;height:20px">&nbsp;s</td>
+                    <td style="width:498px;height:20px">&nbsp;APConfig</td>
+                </tr>
+                <tr>
+                    <td style="width:72px;height:20px">&nbsp;c</td>
+                    <td style="width:498px;height:20px">&nbsp;sub</td>
+                </tr>
+                <tr>
+                    <td style="width:72px;height:20px">&nbsp;d</td>
+                    <td style="width:498px;height:20px">&nbsp;紀錄所有profile的版本
+                        <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                            <tbody>
+                                <tr>
+                                    <td style="width:72px;height:20px">&nbsp;Key</td>
+                                    <td style="width:376px;height:20px">&nbsp;說明</td>
+                                </tr>
+                                <tr>
+                                    <td style="width:72px;height:20px">&nbsp;c</td>
+                                    <td style="width:376px;height:20px">&nbsp;(Commpany)Json字串。Key為profile，value為版號。</td>
+                                </tr>
+                                <tr>
+                                    <td style="width:72px;height:20px">&nbsp;p</td>
+                                    <td style="width:376px;height:20px">&nbsp;(Product)</td>
+                                </tr>
+                                <tr>
+                                    <td style="width:72px;height:20px">&nbsp;u</td>
+                                    <td style="width:376px;height:20px">&nbsp;(User)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:72px;height:20px">&nbsp;cd</td>
+                    <td style="width:498px;height:20px">&nbsp;錯誤代碼
+                        <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                            <tbody>
+                                <tr>
+                                    <td style="width:60px">&nbsp;ErrorCode</td>
+                                    <td style="width:60px">&nbsp;說明</td>
+                                </tr>
+                                <tr>
+                                    <td style="width:60px">&nbsp;0</td>
+                                    <td style="width:60px">&nbsp;成功</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:72px;height:20px">&nbsp;r</td>
+                    <td style="width:498px;height:20px">&nbsp;使用者帶入的r</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div>例：{''s":"APConfig", "c":"sub", "d":{&nbsp;"c":{"default":1}, "p":{"default2":2,
+        "default3":4},&nbsp;"u":{"default5":6}&nbsp;}, "cd":0, "r":"rid001"}</div>
+</blockquote>
+<!--  subEx start -->
+<div>
+    <font size="3"><b>命令 : <font color="#6aa84f">subEx</font></b></font>
+</div>
+<blockquote dir="ltr" style="margin-right:0px">
+    <div>
+        <font color="#333333">
+            <div>
+                <font color="#666666">說明：訂閱指定商品，呼叫此命令之後，會返回該商品所有profile的版本號，並在之後，單一profile更新版本，將會收到通知。</font>
+            </div>
+            <div>
+                <font color="#666666">條件<font face="Arial">：Json字串</font>
+                </font>
+            </div>
+            <div>
+                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                    <tbody>
+                        <tr>
+                            <td style="width:72px;height:20px">
+                                <font color="#666666">&nbsp;Key</font>
+                            </td>
+                            <td style="width:72px;height:20px">
+                                <font color="#666666">&nbsp;類型</font>
+                            </td>
+                            <td style="width:665px;height:20px">
+                                <font color="#666666">&nbsp;說明</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <font color="#666666">&nbsp;product</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;String</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;欲訂閱的商品。</font>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <div>
+                    <font color="#666666">例：{"s":"APConfig","c":"</font><span style="color:rgb(102,102,102);font-size:13.3333px">subEx</span>
+                    <font color="#666666">","d":{"product":"aaa"}},"r":"anyString"}</font>
+                </div>
+                <div>
+                    <font color="#666666"><br>
+                    </font>
+                </div>
+                <div>
+                    <font color="#666666">
+                        <div>回傳格式<br>
+                        </div>
+                        <div>
+                            <div>
+                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                    <tbody>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;Key</td>
+                                            <td style="width:719px;height:21px">&nbsp;說明</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;s</td>
+                                            <td style="width:719px;height:21px">&nbsp;APConfig</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;c</td>
+                                            <td style="width:719px;height:21px">&nbsp;search</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:117px">&nbsp;d</td>
+                                            <td style="width:719px;height:117px">&nbsp;資料Josn
+                                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">Key</td>
+                                                            <td style="width:570px;height:22px">&nbsp;說明</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:21px">&nbsp;cpuf</td>
+                                                            <td style="width:570px;height:21px">&nbsp;Json字串，使用者代上來的company(c)、product(p)、user(u)、profile(f)</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">&nbsp;data</td>
+                                                            <td style="width:570px;height:22px">&nbsp;Json字串組成的array，內容為company、product、user、profile</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">&nbsp;msg</td>
+                                                            <td style="width:570px;height:22px">&nbsp;當cd不為0時的錯誤說明</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:68px">&nbsp;cd</td>
+                                            <td style="width:719px;height:68px">&nbsp;錯誤代碼
+                                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td style="width:60px">&nbsp;ErrorCode</td>
+                                                            <td style="width:60px">&nbsp;說明</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:60px">&nbsp;0</td>
+                                                            <td style="width:60px">&nbsp;成功</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;r</td>
+                                            <td style="width:719px;height:21px">&nbsp;使用者帶入的r</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>例：{"s":"APConfig","c":"search","d":{"cpuf":{"company":"as"},"data":[{"company":"as","profile":"default"},{"company":"as","product":"yc-master","profile":"default"},{"company":"as","product":"yc-master","user":"user001","profile":"default"},{...}]},"r":"123"}</div>
+                    </font>
+                </div>
+            </div>
+            <div><br>
+            </div>
+        </font>
+    </div>
+</blockquote>
+
+<!-- -->
+<div>
+    <font size="3"><strong>命令：</strong><strong>
+            <font color="#6aa84f">search</font>
+        </strong></font>
+</div>
+<blockquote dir="ltr" style="margin-right:0px">
+    <div>
+        <font color="#333333">
+            <div>
+                <font color="#666666">說明：用來查詢符合條件的使用者名稱與相關的所有設定</font>
+            </div>
+            <div>
+                <font color="#666666">條件<font face="Arial">：Json字串</font>
+                </font>
+            </div>
+            <div>
+                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                    <tbody>
+                        <tr>
+                            <td style="width:72px;height:20px">
+                                <font color="#666666">&nbsp;Key</font>
+                            </td>
+                            <td style="width:72px;height:20px">
+                                <font color="#666666">&nbsp;類型</font>
+                            </td>
+                            <td style="width:665px;height:20px">
+                                <font color="#666666">&nbsp;說明</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <font color="#666666">&nbsp;product</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;String</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;任意字串。預設為空值，可代入"*"來代表任意值。</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <font color="#666666">&nbsp;user</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;String</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;任意字串。預設為空值，可代入"*"來代表任意值。</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <font color="#666666">&nbsp;profile</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;String</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;任意字串。預設為空值，可代入"*"來代表任意值。</font>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <div>
+                    <font color="#666666">例：{"s":"APConfig","c":"</font><span style="color:rgb(102,102,102);font-size:13.3333px">search</span>
+                    <font color="#666666">","d":{"profile":"anyString","data":{&nbsp;(略) }},"r":"123"}</font>
+                </div>
+                <div>
+                    <font color="#666666"><br>
+                    </font>
+                </div>
+                <div>
+                    <font color="#666666">
+                        <div>回傳格式<br>
+                        </div>
+                        <div>
+                            <div>
+                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                    <tbody>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;Key</td>
+                                            <td style="width:719px;height:21px">&nbsp;說明</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;s</td>
+                                            <td style="width:719px;height:21px">&nbsp;APConfig</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;c</td>
+                                            <td style="width:719px;height:21px">&nbsp;search</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:117px">&nbsp;d</td>
+                                            <td style="width:719px;height:117px">&nbsp;資料Josn
+                                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">Key</td>
+                                                            <td style="width:570px;height:22px">&nbsp;說明</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:21px">&nbsp;cpuf</td>
+                                                            <td style="width:570px;height:21px">&nbsp;Json字串，使用者代上來的company(c)、product(p)、user(u)、profile(f)</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">&nbsp;data</td>
+                                                            <td style="width:570px;height:22px">&nbsp;Json字串組成的array，內容為company、product、user、profile</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">&nbsp;msg</td>
+                                                            <td style="width:570px;height:22px">&nbsp;當cd不為0時的錯誤說明</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:68px">&nbsp;cd</td>
+                                            <td style="width:719px;height:68px">&nbsp;錯誤代碼
+                                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td style="width:60px">&nbsp;ErrorCode</td>
+                                                            <td style="width:60px">&nbsp;說明</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:60px">&nbsp;0</td>
+                                                            <td style="width:60px">&nbsp;成功</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;r</td>
+                                            <td style="width:719px;height:21px">&nbsp;使用者帶入的r</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>例：{"s":"APConfig","c":"search","d":{"cpuf":{"company":"as"},"data":[{"company":"as","profile":"default"},{"company":"as","product":"yc-master","profile":"default"},{"company":"as","product":"yc-master","user":"user001","profile":"default"},{...}]},"r":"123"}</div>
+                    </font>
+                </div>
+            </div>
+            <div><br>
+            </div>
+        </font>
+    </div>
+</blockquote>
+<div>
+    <font size="3"><strong>命令：</strong>
+        <font color="#6aa84f"><strong>setCompany、setProduct、setUser、<font color="#3d85c6">setExCompany、setExProduct、set</font></strong>
+            <font color="#3d85c6"><strong>Ex</strong><strong>User</strong></font>
+        </font>
+    </font>
+</div>
+<blockquote style="margin-right:0px">
+    <div>條件<font face="Arial">：Json字串</font>
+    </div>
+    <div>
+        <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+            <tbody>
+                <tr>
+                    <td style="width:72px;height:20px">&nbsp;Key</td>
+                    <td style="width:72px;height:20px">&nbsp;類型</td>
+                    <td style="width:665px;height:20px">&nbsp;說明</td>
+                </tr>
+                <tr>
+                    <td style="width:72px;height:20px">&nbsp;profile</td>
+                    <td style="width:72px;height:20px">&nbsp;String</td>
+                    <td style="width:665px;height:20px">&nbsp;任意字串。預設為default。</td>
+                </tr>
+                <tr>
+                    <td>&nbsp;data</td>
+                    <td>&nbsp;Json</td>
+                    <td>&nbsp;要儲存的資料</td>
+                </tr>
+                <tr>
+                    <td>
+                        <font color="#3d85c6">&nbsp;product</font>
+                    </td>
+                    <td>
+                        <font color="#3d85c6">&nbsp;String</font>
+                    </td>
+                    <td>
+                        <font color="#3d85c6">&nbsp;只在Ex的情況下作用。直接指定對象。</font>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <font color="#3d85c6">&nbsp;user</font>
+                    </td>
+                    <td>
+                        <font color="#3d85c6">&nbsp;String</font>
+                    </td>
+                    <td>
+                        <font color="#3d85c6">&nbsp;只在Ex的情況下作用。直接指定對象。</font>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div>
+        <div>例：{"s":"APConfig","c":"<font color="#6aa84f">setUser</font>","d":{"profile":"anyString","data":{<font
+                color="#990000">&nbsp;(略) </font>}},"r":"threadID"}</div>
+        <div><br>
+        </div>
+    </div>
+</blockquote>
+<blockquote style="margin-right:0px">
+    <div>
+        <div>回傳格式</div>
+        <div>
+            <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                <tbody>
+                    <tr>
+                        <td style="width:72px;height:20px">&nbsp;Key</td>
+                        <td style="width:580px;height:20px">&nbsp;說明</td>
+                    </tr>
+                    <tr>
+                        <td style="width:72px;height:20px">&nbsp;s</td>
+                        <td style="width:580px;height:20px">&nbsp;APConfig</td>
+                    </tr>
+                    <tr>
+                        <td style="width:72px;height:20px">&nbsp;c</td>
+                        <td style="width:580px;height:20px">&nbsp;setCompany 或 setProduct 或 setUser</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;d</td>
+                        <td>&nbsp;資料Josn
+                            <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                <tbody>
+                                    <tr>
+                                        <td style="width:72px;height:21px">Key</td>
+                                        <td style="width:198px;height:21px">&nbsp;說明</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="width:72px;height:21px">&nbsp;msg</td>
+                                        <td style="width:198px;height:21px">&nbsp;訊息</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;cd</td>
+                        <td>&nbsp;錯誤代碼
+                            <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                <tbody>
+                                    <tr>
+                                        <td style="width:60px">&nbsp;ErrorCode</td>
+                                        <td style="width:60px">&nbsp;說明</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="width:60px">&nbsp;0</td>
+                                        <td style="width:60px">&nbsp;成功</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;r</td>
+                        <td>&nbsp;使用者帶入的r</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</blockquote>
+<div>&nbsp;</div>
+<div>
+    <font size="3"><strong>命令：</strong>
+        <font color="#6aa84f"><strong>getCompany、getProduct、getUser、</strong><strong>
+                <font color="#3d85c6">getExCompany、getExProduct、getExUser</font>
+            </strong></font>
+    </font>
+</div>
+<blockquote dir="ltr" style="margin-right:0px">
+    <div>
+        <font face="Arial">
+            <div>條件<font face="Arial">：Json字串</font>
+            </div>
+            <div>
+                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                    <tbody>
+                        <tr>
+                            <td style="width:72px;height:20px">&nbsp;Key</td>
+                            <td style="width:72px;height:20px">&nbsp;類型</td>
+                            <td style="width:665px;height:20px">&nbsp;說明</td>
+                        </tr>
+                        <tr>
+                            <td style="width:72px;height:20px">&nbsp;profile</td>
+                            <td style="width:72px;height:20px">&nbsp;String</td>
+                            <td style="width:665px;height:20px">&nbsp;使用set命令時放入的字串。預設為default。</td>
+                        </tr>
+                        <tr>
+                            <td>&nbsp;<font color="#3d85c6">product</font>
+                            </td>
+                            <td>&nbsp;<font color="#3d85c6">String</font>
+                            </td>
+                            <td>&nbsp;<font color="#3d85c6">只在Ex的情況下作用。直接指定對象。</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>&nbsp;<font color="#3d85c6">user</font>
+                            </td>
+                            <td>&nbsp;<font color="#3d85c6">String</font>
+                            </td>
+                            <td>&nbsp;<font color="#3d85c6">只在Ex的情況下作用。直接指定對象。</font>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <div>例：{"s":"APConfig","c":"<font color="#6aa84f">getUser</font>","d":{"profile":"anyString"},"r":"threadID"}</div>
+                <div><br>
+                </div>
+                <div>回傳格式</div>
+                <div>
+                    <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                        <tbody>
+                            <tr>
+                                <td style="width:72px;height:20px">&nbsp;Key</td>
+                                <td style="width:340px;height:20px">&nbsp;說明</td>
+                            </tr>
+                            <tr>
+                                <td style="width:72px;height:20px">&nbsp;s</td>
+                                <td style="width:340px;height:20px">&nbsp;APConfig</td>
+                            </tr>
+                            <tr>
+                                <td style="width:72px;height:20px">&nbsp;c</td>
+                                <td style="width:340px;height:20px">&nbsp;&nbsp;getCompany 或 getProduct 或 getUser</td>
+                            </tr>
+                            <tr>
+                                <td style="width:72px;height:20px">&nbsp;d</td>
+                                <td style="width:340px;height:20px">&nbsp;資料Josn
+                                    <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                        <tbody>
+                                            <tr>
+                                                <td style="width:72px;height:20px">&nbsp;Key</td>
+                                                <td style="width:170px;height:20px">&nbsp;說明</td>
+                                            </tr>
+                                            <tr>
+                                                <td>&nbsp;profile</td>
+                                                <td>&nbsp;查詢時輸入的profile</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width:72px;height:20px">&nbsp;data</td>
+                                                <td style="width:170px;height:20px">&nbsp;儲存的Json</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width:72px;height:20px">&nbsp;msg</td>
+                                                <td style="width:170px;height:20px">&nbsp;當cd不為0時的錯誤說明</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="width:72px;height:20px">&nbsp;cd</td>
+                                <td style="width:340px;height:20px">&nbsp;錯誤代碼
+                                    <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                        <tbody>
+                                            <tr>
+                                                <td style="width:60px">&nbsp;ErrorCode</td>
+                                                <td style="width:60px">&nbsp;說明</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width:60px">&nbsp;0</td>
+                                                <td style="width:60px">&nbsp;成功</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="width:72px;height:20px">&nbsp;r</td>
+                                <td style="width:340px;height:20px">&nbsp;使用者帶入的r</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </font>
+    </div>
+</blockquote>
+<div>
+    <font face="Arial"><br>
+    </font>
+</div>
+<div>
+    <div>&nbsp;<font size="3"><strong>命令：</strong>
+            <font color="#6aa84f"><strong>delCompany、delProduct、delUser、</strong><strong>
+                    <font color="#3d85c6">delExCompany、delExProduct、delExUser</font>
+                </strong></font>
+        </font>
+    </div>
+</div>
+<div>
+    <blockquote dir="ltr" style="margin-right:0px">
+        <div style="text-align:left">條件<font face="Arial">：Json字串</font>
+        </div>
+    </blockquote>
+    <blockquote style="margin-right:0px">
+        <div>
+            <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                <tbody>
+                    <tr>
+                        <td style="width:72px;height:20px">&nbsp;Key</td>
+                        <td style="width:72px;height:20px">&nbsp;類型</td>
+                        <td style="width:665px;height:20px">&nbsp;說明</td>
+                    </tr>
+                    <tr>
+                        <td style="width:72px;height:20px">&nbsp;profile</td>
+                        <td style="width:72px;height:20px">&nbsp;String</td>
+                        <td style="width:665px;height:20px">&nbsp;任意字串。預設為default。</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;data</td>
+                        <td>&nbsp;Json</td>
+                        <td>&nbsp;要儲存的資料</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;<font color="#3d85c6">product</font>
+                        </td>
+                        <td>&nbsp;<font color="#3d85c6">String</font>
+                        </td>
+                        <td>&nbsp;<font color="#3d85c6">只在Ex的情況下作用。直接指定對象。</font>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;<font color="#3d85c6">user</font>
+                        </td>
+                        <td>&nbsp;<font color="#3d85c6">String</font>
+                        </td>
+                        <td>&nbsp;<font color="#3d85c6">只在Ex的情況下作用。直接指定對象。</font>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div>
+            <div>例：{"s":"APConfig","c":"<font color="#6aa84f">delUser</font>","d":{"profile":"anyString"},"r":"threadID"}</div>
+            <div><br>
+            </div>
+        </div>
+    </blockquote>
+    <blockquote style="margin-right:0px">
+        <div>
+            <div>回傳格式</div>
+            <div>
+                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                    <tbody>
+                        <tr>
+                            <td style="width:72px;height:20px">&nbsp;Key</td>
+                            <td style="width:580px;height:20px">&nbsp;說明</td>
+                        </tr>
+                        <tr>
+                            <td style="width:72px;height:20px">&nbsp;s</td>
+                            <td style="width:580px;height:20px">&nbsp;APConfig</td>
+                        </tr>
+                        <tr>
+                            <td style="width:72px;height:20px">&nbsp;c</td>
+                            <td style="width:580px;height:20px">&nbsp;delCompany 或 delProduct 或 delUser</td>
+                        </tr>
+                        <tr>
+                            <td>&nbsp;d</td>
+                            <td>&nbsp;資料Josn
+                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                    <tbody>
+                                        <tr>
+                                            <td style="width:72px;height:21px">Key</td>
+                                            <td style="width:198px;height:21px">&nbsp;說明</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:72px;height:21px">&nbsp;msg</td>
+                                            <td style="width:198px;height:21px">&nbsp;訊息</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>&nbsp;cd</td>
+                            <td>&nbsp;錯誤代碼
+                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                    <tbody>
+                                        <tr>
+                                            <td style="width:60px">&nbsp;ErrorCode</td>
+                                            <td style="width:60px">&nbsp;說明</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:60px">&nbsp;0</td>
+                                            <td style="width:60px">&nbsp;成功</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>&nbsp;r</td>
+                            <td>&nbsp;使用者帶入的r</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </blockquote>
+    <div>&nbsp;</div>
+</div>
+<div><b>
+        <font size="3">&nbsp;<a href="https://docs.google.com/document/d/1ZYjaGZ2r3Zm1EbTsdkgUVNZlwQtylcrkVmNn4RM-Lis/edit#">BO使用教學</a></font>
+    </b><br>
+    <br>
+</div>
+<div>
+    <div>&nbsp;</div>
+</div>

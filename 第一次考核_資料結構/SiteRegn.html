@@ -1,0 +1,337 @@
+<!--  subEx start -->
+<div>
+    <font size="3"><b>命令 : <font color="#3d85c6">subEx</font></b></font>
+</div>
+<blockquote dir="ltr" style="margin-right:0px">
+    <div>
+        <font color="#333333">
+            <div>
+                <font color="#666666">說明：訂閱指定商品，呼叫此命令之後，會返回該商品所有profile的版本號，並在之後，單一profile更新版本，將會收到通知。</font>
+            </div>
+            <div>
+                <font color="#666666">條件<font face="Arial">：Json字串</font>
+                </font>
+            </div>
+            <div>
+                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                    <tbody>
+                        <tr>
+                            <td style="width:72px;height:20px">
+                                <font color="#666666">&nbsp;Key</font>
+                            </td>
+                            <td style="width:72px;height:20px">
+                                <font color="#666666">&nbsp;類型</font>
+                            </td>
+                            <td style="width:665px;height:20px">
+                                <font color="#666666">&nbsp;說明</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <font color="#666666">&nbsp;s</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;String</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;Service : APConfig</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <font color="#666666">&nbsp;c</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;String</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;Command : subEx</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <font color="#666666">&nbsp;d</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;Json</font>
+                            </td>
+                            <td style="width:719px;height:117px">&nbsp;<font color="#666666">Data</font>
+                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                    <tbody>
+                                            <tr>
+                                                <td style="width:96px;height:22px"><font color="#666666">Key</font></td>
+                                                <td style="width:570px;height:22px">&nbsp;<font color="#666666">說明</font></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width:96px;height:21px">&nbsp;p(product)</td>
+                                                <td style="width:570px;height:21px">&nbsp;Json字串，Key為profile，value為版本號。</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width:96px;height:22px">&nbsp;u(user)</td>
+                                                <td style="width:570px;height:22px">&nbsp;Json字串組成的array，內容為company、product、user、profile</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width:96px;height:22px">&nbsp;msg</td>
+                                                <td style="width:570px;height:22px">&nbsp;當cd不為0時的錯誤說明</td>
+                                            </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <font color="#666666">&nbsp;product</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;String</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;欲訂閱的商品。</font>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <div>
+                    <font color="#666666">例：{"s":"APConfig","c":"</font><span style="color:rgb(102,102,102);font-size:13.3333px">subEx</span>
+                    <font color="#666666">","d":{"product":"aaa"}},"r":"anyString"}</font>
+                </div>
+                <div>
+                    <font color="#666666"><br>
+                    </font>
+                </div>
+                <div>
+                    <font color="#666666">
+                        <div>回傳格式<br>
+                        </div>
+                        <div>
+                            <div>
+                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                    <tbody>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;Key</td>
+                                            <td style="width:719px;height:21px">&nbsp;說明</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;s</td>
+                                            <td style="width:719px;height:21px">&nbsp;APConfig</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;c</td>
+                                            <td style="width:719px;height:21px">&nbsp;subEx</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:117px">&nbsp;d</td>
+                                            <td style="width:719px;height:117px">&nbsp;紀錄所有的profile版本
+                                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">Key</td>
+                                                            <td style="width:570px;height:22px">&nbsp;說明</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:21px">&nbsp;p(product)</td>
+                                                            <td style="width:570px;height:21px">&nbsp;Json字串，Key為profile，value為版本號。</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">&nbsp;u(user)</td>
+                                                            <td style="width:570px;height:22px">&nbsp;Json字串組成的array，內容為company、product、user、profile</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">&nbsp;msg</td>
+                                                            <td style="width:570px;height:22px">&nbsp;當cd不為0時的錯誤說明</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:68px">&nbsp;cd</td>
+                                            <td style="width:719px;height:68px">&nbsp;錯誤代碼
+                                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td style="width:60px">&nbsp;ErrorCode</td>
+                                                            <td style="width:60px">&nbsp;說明</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:60px">&nbsp;0</td>
+                                                            <td style="width:60px">&nbsp;成功</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;r</td>
+                                            <td style="width:719px;height:21px">&nbsp;使用者帶入的r</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>例：{"s":"APConfig","c":"search","d":{"cpuf":{"company":"as"},"data":[{"company":"as","profile":"default"},{"company":"as","product":"yc-master","profile":"default"},{"company":"as","product":"yc-master","user":"user001","profile":"default"},{...}]},"r":"123"}</div>
+                    </font>
+                </div>
+            </div>
+            <div><br>
+            </div>
+        </font>
+    </div>
+</blockquote>
+
+<!-- -->
+<div>
+    <font size="3"><strong>命令：</strong><strong>
+            <font color="#6aa84f">search</font>
+        </strong></font>
+</div>
+<blockquote dir="ltr" style="margin-right:0px">
+    <div>
+        <font color="#333333">
+            <div>
+                <font color="#666666">說明：用來查詢符合條件的使用者名稱與相關的所有設定</font>
+            </div>
+            <div>
+                <font color="#666666">條件<font face="Arial">：Json字串</font>
+                </font>
+            </div>
+            <div>
+                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                    <tbody>
+                        <tr>
+                            <td style="width:72px;height:20px">
+                                <font color="#666666">&nbsp;Key</font>
+                            </td>
+                            <td style="width:72px;height:20px">
+                                <font color="#666666">&nbsp;類型</font>
+                            </td>
+                            <td style="width:665px;height:20px">
+                                <font color="#666666">&nbsp;說明</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <font color="#666666">&nbsp;product</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;String</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;任意字串。預設為空值，可代入"*"來代表任意值。</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <font color="#666666">&nbsp;user</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;String</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;任意字串。預設為空值，可代入"*"來代表任意值。</font>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <font color="#666666">&nbsp;profile</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;String</font>
+                            </td>
+                            <td>
+                                <font color="#666666">&nbsp;任意字串。預設為空值，可代入"*"來代表任意值。</font>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <div>
+                    <font color="#666666">例：{"s":"APConfig","c":"</font><span style="color:rgb(102,102,102);font-size:13.3333px">search</span>
+                    <font color="#666666">","d":{"profile":"anyString","data":{&nbsp;(略) }},"r":"123"}</font>
+                </div>
+                <div>
+                    <font color="#666666"><br>
+                    </font>
+                </div>
+                <div>
+                    <font color="#666666">
+                        <div>回傳格式<br>
+                        </div>
+                        <div>
+                            <div>
+                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                    <tbody>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;Key</td>
+                                            <td style="width:719px;height:21px">&nbsp;說明</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;s</td>
+                                            <td style="width:719px;height:21px">&nbsp;APConfig</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;c</td>
+                                            <td style="width:719px;height:21px">&nbsp;search</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:117px">&nbsp;d</td>
+                                            <td style="width:719px;height:117px">&nbsp;資料Josn
+                                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">Key</td>
+                                                            <td style="width:570px;height:22px">&nbsp;說明</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:21px">&nbsp;cpuf</td>
+                                                            <td style="width:570px;height:21px">&nbsp;Json字串，使用者代上來的company(c)、product(p)、user(u)、profile(f)</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">&nbsp;data</td>
+                                                            <td style="width:570px;height:22px">&nbsp;Json字串組成的array，內容為company、product、user、profile</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:96px;height:22px">&nbsp;msg</td>
+                                                            <td style="width:570px;height:22px">&nbsp;當cd不為0時的錯誤說明</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:68px">&nbsp;cd</td>
+                                            <td style="width:719px;height:68px">&nbsp;錯誤代碼
+                                                <table border="1" bordercolor="#888" cellspacing="0" style="border-width:1px;border-color:rgb(136,136,136);border-collapse:collapse">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td style="width:60px">&nbsp;ErrorCode</td>
+                                                            <td style="width:60px">&nbsp;說明</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="width:60px">&nbsp;0</td>
+                                                            <td style="width:60px">&nbsp;成功</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="width:84px;height:21px">&nbsp;r</td>
+                                            <td style="width:719px;height:21px">&nbsp;使用者帶入的r</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>例：{"s":"APConfig","c":"search","d":{"cpuf":{"company":"as"},"data":[{"company":"as","profile":"default"},{"company":"as","product":"yc-master","profile":"default"},{"company":"as","product":"yc-master","user":"user001","profile":"default"},{...}]},"r":"123"}</div>
+                    </font>
+                </div>
+            </div>
+            <div><br>
+            </div>
+        </font>
+    </div>
+</blockquote>
