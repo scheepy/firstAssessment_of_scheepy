@@ -1,1 +1,2 @@
 # firstAssessment_of_scheepy
+試用期第一次考核期間做的項目和筆記
